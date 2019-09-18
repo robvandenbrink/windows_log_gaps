@@ -1,0 +1,33 @@
+# declare the object to hold "boundary" events on either side of a gap in the logs
+$BoundaryEvents = @()
+$SecEvents = Get-WinEvent "Security"
+$RecID0 = $SecEvents[0].RecordID
+
+foreach ($event in $SecEvents) {
+  # check - is this the first event?
+  if ($RecID0 -ne $event.RecordID) {
+       if ($RecID0 - $event.recordid -eq 1) {
+               $RecID0 = $event.recordid
+               }
+       else {
+             # save the event record id's that bound the hole in the event log
+             # also save them to the ":list of holes"
+             $BEvents = New-Object -TypeName psobject
+             $BEvents | add-member -NotePropertyName before -NotePropertyValue $RecID0
+             $BEvents | add-member -NotePropertyName after -NotePropertyValue $event.recordid
+
+             $BoundaryEvents += $BEvents
+             $RecID0 = $event.recordid
+       }
+   }
+}
+
+# this kicks the output to STDOUT
+# edit this code to handle the output however it best suits your needs
+
+if ($BoundaryEvents.Count -eq 0) {
+    Write-Host "No gaps in log"
+    } else {
+    Write-Host "Log Gap Summary:`r"
+    $BoundaryEvents | ft
+    }
